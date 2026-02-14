@@ -1,23 +1,560 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!doctype html>
+<html lang="ru">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2575.7">
-  <style type="text/css">
-    body {background-color: #000000}
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 24.0px Arial; color: #ffffff; -webkit-text-stroke: #ffffff}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Arial; color: #ffffff; -webkit-text-stroke: #ffffff; min-height: 14.0px}
-    p.p3 {margin: 0.0px 0.0px 0.0px 0.0px; text-align: center; font: 14.0px Arial; color: #757575; -webkit-text-stroke: #757575}
-    span.s1 {font-kerning: none; background-color: #000000}
-    span.s2 {font-kerning: none}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PONGG Turbo+</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #04070f;
+      --panel: #0f1629;
+      --accent: #72f7ff;
+      --accent2: #ff67ce;
+      --good: #9dff88;
+      --text: #ecf1ff;
+      --muted: #8ea0cc;
+    }
+
+    * { box-sizing: border-box; font-family: "Segoe UI", Roboto, system-ui, sans-serif; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #101d3d 0%, var(--bg) 55%);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 16px;
+    }
+
+    .game-shell {
+      width: min(940px, 100%);
+      background: linear-gradient(180deg, #111a31 0%, #0a1020 100%);
+      border: 1px solid #25345d;
+      border-radius: 16px;
+      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+    }
+
+    .hud {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      padding: 12px;
+      background: rgba(11, 18, 33, 0.95);
+      border-bottom: 1px solid #202f56;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid #263a68;
+      border-radius: 10px;
+      padding: 10px 12px;
+      min-height: 70px;
+    }
+
+    .label { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
+    .value { font-size: clamp(19px, 2.4vw, 27px); font-weight: 700; }
+    .value small { color: var(--muted); font-size: .6em; font-weight: 500; }
+
+    .settings {
+      padding: 8px 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      border-bottom: 1px solid #202f56;
+      background: rgba(8, 14, 30, .9);
+    }
+
+    .settings button {
+      border: 1px solid #2f4678;
+      background: #0f1a31;
+      color: #c9d8ff;
+      border-radius: 999px;
+      padding: 7px 12px;
+      cursor: pointer;
+    }
+
+    .settings button.active { border-color: var(--accent); color: var(--accent); }
+
+    canvas { width: 100%; height: auto; display: block; background: linear-gradient(180deg, #060c1b 0%, #0a1530 100%); touch-action: none; }
+
+    .controls {
+      padding: 10px 12px 14px;
+      font-size: 14px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      border-top: 1px solid #202f56;
+    }
+
+    .pill { border: 1px solid #2f4678; background: #101a32; border-radius: 999px; padding: 6px 10px; color: #c9d8ff; }
+    .accent { color: var(--accent); font-weight: 600; }
+    .pink { color: var(--accent2); font-weight: 600; }
+    .good { color: var(--good); font-weight: 600; }
+
+    @media (max-width: 780px) {
+      .hud { grid-template-columns: repeat(2, 1fr); }
+    }
   </style>
 </head>
 <body>
-<p class="p1"><span class="s1">Left: 0 | Right: 0</span></p>
-<p class="p2"><span class="s2"></span><br></p>
-<p class="p3"><span class="s1">Touch to move left paddle</span></p>
+  <main class="game-shell">
+    <section class="hud">
+      <div class="card"><span class="label">Счёт</span><div class="value" id="score">Игрок 0 : 0 ИИ</div></div>
+      <div class="card"><span class="label">Режим</span><div class="value" id="mode">Обычный</div></div>
+      <div class="card"><span class="label">Серия ударов</span><div class="value" id="rally">0 <small>+ скорость</small></div></div>
+      <div class="card"><span class="label">Энергия рывка</span><div class="value" id="energy">100% <small>Shift</small></div></div>
+    </section>
+
+    <section class="settings" aria-label="Настройки сложности">
+      <button data-difficulty="1" class="active">Лёгкий</button>
+      <button data-difficulty="1.3">Нормальный</button>
+      <button data-difficulty="1.7">Сложный</button>
+      <button data-difficulty="2.1">Экстрим</button>
+    </section>
+
+    <canvas id="game" width="900" height="520" aria-label="PONG game field"></canvas>
+
+    <section class="controls">
+      <span class="pill">⌨️ W/S или ↑/↓ для игрока</span>
+      <span class="pill">⚡ <span class="good">Shift</span> — рывок ракетки (тратит энергию)</span>
+      <span class="pill">📱 На телефоне: веди пальцем по левой половине</span>
+      <span class="pill"><span class="accent">Space</span> — пауза/старт · <span class="pink">R</span> — рестарт</span>
+    </section>
+  </main>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    const scoreEl = document.getElementById("score");
+    const modeEl = document.getElementById("mode");
+    const rallyEl = document.getElementById("rally");
+    const energyEl = document.getElementById("energy");
+    const difficultyButtons = document.querySelectorAll(".settings button");
+
+    const state = {
+      running: false,
+      paused: false,
+      leftScore: 0,
+      rightScore: 0,
+      rally: 0,
+      particles: [],
+      powerUp: null,
+      powerUpTimer: 0,
+      boostTime: 0,
+      difficulty: 1,
+      chosenDifficulty: 1,
+      winScore: 7,
+      playerEnergy: 100,
+      superShots: 0,
+      botFreeze: 0,
+    };
+
+    const paddle = {
+      w: 14,
+      h: 96,
+      speed: 8,
+      leftY: canvas.height / 2 - 48,
+      rightY: canvas.height / 2 - 48,
+    };
+
+    const ball = {
+      x: canvas.width / 2,
+      y: canvas.height / 2,
+      r: 10,
+      vx: 6,
+      vy: 2.4,
+      baseSpeed: 6,
+      trail: [],
+      glow: "#8fd8ff",
+    };
+
+    const input = { w: false, s: false, up: false, down: false, shift: false, pointerY: null };
+
+    function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
+
+    function updateHud() {
+      scoreEl.textContent = `Игрок ${state.leftScore} : ${state.rightScore} ИИ`;
+      rallyEl.textContent = `${state.rally} + скорость`;
+      energyEl.textContent = `${Math.round(state.playerEnergy)}%`;
+
+      if (state.superShots > 0) {
+        modeEl.textContent = `Супер-удар ×${state.superShots}`;
+      } else if (state.botFreeze > 0) {
+        modeEl.textContent = "Заморозка ИИ";
+      } else if (state.boostTime > 0) {
+        modeEl.textContent = "БУСТ игрока";
+      } else if (state.difficulty >= 2.6) {
+        modeEl.textContent = "Хаос";
+      } else if (state.difficulty >= 1.8) {
+        modeEl.textContent = "Турбо";
+      } else {
+        modeEl.textContent = "Обычный";
+      }
+    }
+
+    function spawnParticles(x, y, color, amount = 18) {
+      for (let i = 0; i < amount; i += 1) {
+        state.particles.push({
+          x,
+          y,
+          vx: (Math.random() - 0.5) * 6,
+          vy: (Math.random() - 0.5) * 6,
+          life: 20 + Math.random() * 18,
+          color,
+        });
+      }
+    }
+
+    function resetBall(direction = 1) {
+      ball.x = canvas.width / 2;
+      ball.y = canvas.height / 2;
+      ball.trail.length = 0;
+      state.rally = 0;
+      const speed = ball.baseSpeed + Math.min(state.difficulty * 0.35, 2.8);
+      ball.vx = speed * direction;
+      ball.vy = speed * (Math.random() * 0.8 - 0.4);
+      ball.glow = "#8fd8ff";
+      updateHud();
+    }
+
+    function fullReset() {
+      state.leftScore = 0;
+      state.rightScore = 0;
+      state.rally = 0;
+      state.difficulty = state.chosenDifficulty;
+      state.boostTime = 0;
+      state.superShots = 0;
+      state.botFreeze = 0;
+      state.playerEnergy = 100;
+      state.powerUp = null;
+      state.powerUpTimer = 0;
+      paddle.h = 96;
+      paddle.leftY = canvas.height / 2 - paddle.h / 2;
+      paddle.rightY = canvas.height / 2 - paddle.h / 2;
+      resetBall(Math.random() > 0.5 ? 1 : -1);
+      state.running = true;
+      state.paused = false;
+      updateHud();
+    }
+
+    function maybeSpawnPowerUp() {
+      if (state.powerUp || Math.random() > 0.0045) return;
+      const rolls = ["boost", "shrink-ai", "supershot", "freeze"];
+      state.powerUp = {
+        x: canvas.width * (0.34 + Math.random() * 0.32),
+        y: 55 + Math.random() * (canvas.height - 110),
+        r: 12,
+        type: rolls[Math.floor(Math.random() * rolls.length)],
+      };
+      state.powerUpTimer = 560;
+    }
+
+    function movePlayerPaddle() {
+      const moveUp = input.w || input.up;
+      const moveDown = input.s || input.down;
+      let dy = 0;
+      let speed = paddle.speed;
+
+      if (input.shift && state.playerEnergy > 2) {
+        speed *= 1.8;
+        state.playerEnergy = clamp(state.playerEnergy - 1.1, 0, 100);
+      }
+
+      if (moveUp) dy -= speed;
+      if (moveDown) dy += speed;
+
+      if (input.pointerY !== null) {
+        const target = input.pointerY - paddle.h / 2;
+        dy += clamp((target - paddle.leftY) * 0.22, -speed * 1.4, speed * 1.4);
+      }
+
+      paddle.leftY = clamp(paddle.leftY + dy, 0, canvas.height - paddle.h);
+    }
+
+    function moveAiPaddle() {
+      if (state.botFreeze > 0) return;
+      const aiCenter = paddle.rightY + paddle.h / 2;
+      const target = ball.y + ball.vy * (1.4 + state.difficulty * 0.5);
+      const error = (Math.random() - 0.5) * (32 / state.difficulty);
+      const reaction = 4.1 + state.difficulty * 0.95;
+      const dy = clamp((target + error - aiCenter) * 0.16, -reaction, reaction);
+      paddle.rightY = clamp(paddle.rightY + dy, 0, canvas.height - paddle.h);
+    }
+
+    function applyPowerUp(type) {
+      if (type === "boost") {
+        state.boostTime = 420;
+        ball.glow = "#9dff88";
+      } else if (type === "shrink-ai") {
+        paddle.h = 76;
+      } else if (type === "supershot") {
+        state.superShots += 3;
+      } else if (type === "freeze") {
+        state.botFreeze = 180;
+      }
+    }
+
+    function handleCollisions() {
+      if (ball.y - ball.r <= 0 || ball.y + ball.r >= canvas.height) {
+        ball.vy *= -1;
+        ball.y = clamp(ball.y, ball.r, canvas.height - ball.r);
+        spawnParticles(ball.x, ball.y, "#72f7ff", 14);
+      }
+
+      const leftX = 24;
+      const rightX = canvas.width - 24 - paddle.w;
+
+      const hitLeft = ball.x - ball.r <= leftX + paddle.w && ball.y >= paddle.leftY && ball.y <= paddle.leftY + paddle.h && ball.vx < 0;
+      const hitRight = ball.x + ball.r >= rightX && ball.y >= paddle.rightY && ball.y <= paddle.rightY + paddle.h && ball.vx > 0;
+
+      if (hitLeft || hitRight) {
+        const paddleY = hitLeft ? paddle.leftY : paddle.rightY;
+        const relative = (ball.y - (paddleY + paddle.h / 2)) / (paddle.h / 2);
+        const bounce = clamp(relative, -0.95, 0.95);
+
+        ball.vx *= -1;
+        ball.vy = (ball.baseSpeed + state.rally * 0.13) * bounce;
+
+        let extraSpeed = 0.28 + state.rally * 0.017;
+        if (hitLeft && state.superShots > 0) {
+          extraSpeed += 1.35;
+          state.superShots -= 1;
+          spawnParticles(ball.x, ball.y, "#f9ff76", 24);
+          ball.glow = "#f9ff76";
+        }
+        ball.vx += ball.vx > 0 ? extraSpeed : -extraSpeed;
+
+        state.rally += 1;
+        state.difficulty = clamp(state.difficulty + 0.03, state.chosenDifficulty, 3.3);
+        spawnParticles(ball.x, ball.y, hitLeft ? "#72f7ff" : "#ff67ce");
+        updateHud();
+      }
+
+      if (state.powerUp) {
+        const dx = ball.x - state.powerUp.x;
+        const dy = ball.y - state.powerUp.y;
+        if (Math.hypot(dx, dy) <= ball.r + state.powerUp.r) {
+          applyPowerUp(state.powerUp.type);
+          spawnParticles(state.powerUp.x, state.powerUp.y, "#ffe082", 22);
+          state.powerUp = null;
+          updateHud();
+        }
+      }
+
+      if (ball.x + ball.r < 0) {
+        state.rightScore += 1;
+        state.difficulty = clamp(state.difficulty + 0.1, state.chosenDifficulty, 3.3);
+        checkRoundEnd(1);
+      } else if (ball.x - ball.r > canvas.width) {
+        state.leftScore += 1;
+        state.playerEnergy = clamp(state.playerEnergy + 8, 0, 100);
+        checkRoundEnd(-1);
+      }
+    }
+
+    function checkRoundEnd(nextDirection) {
+      if (state.leftScore >= state.winScore || state.rightScore >= state.winScore) {
+        state.running = false;
+      } else {
+        resetBall(nextDirection);
+      }
+      updateHud();
+    }
+
+    function update() {
+      if (!state.running || state.paused) return;
+
+      movePlayerPaddle();
+      moveAiPaddle();
+
+      if (!input.shift || state.playerEnergy <= 2) {
+        state.playerEnergy = clamp(state.playerEnergy + 0.22, 0, 100);
+      }
+
+      if (state.boostTime > 0) state.boostTime -= 1;
+      if (state.botFreeze > 0) state.botFreeze -= 1;
+      if (paddle.h < 96 && Math.random() > 0.982) paddle.h += 1;
+
+      maybeSpawnPowerUp();
+      if (state.powerUp) {
+        state.powerUpTimer -= 1;
+        if (state.powerUpTimer <= 0) state.powerUp = null;
+      }
+
+      const speedMultiplier = state.boostTime > 0 && ball.vx < 0 ? 1.09 : 1;
+      ball.x += ball.vx * speedMultiplier;
+      ball.y += ball.vy;
+      ball.trail.push({ x: ball.x, y: ball.y });
+      if (ball.trail.length > 16) ball.trail.shift();
+
+      handleCollisions();
+
+      for (let i = state.particles.length - 1; i >= 0; i -= 1) {
+        const p = state.particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 1;
+        p.vx *= 0.97;
+        p.vy *= 0.97;
+        if (p.life <= 0) state.particles.splice(i, 1);
+      }
+
+      updateHud();
+    }
+
+    function drawCenterLine() {
+      ctx.setLineDash([12, 10]);
+      ctx.strokeStyle = "rgba(175, 198, 255, 0.33)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(canvas.width / 2, 20);
+      ctx.lineTo(canvas.width / 2, canvas.height - 20);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    function drawPowerUp() {
+      if (!state.powerUp) return;
+      const map = {
+        boost: { stroke: "#9dff88", text: "BOOST" },
+        "shrink-ai": { stroke: "#ffe082", text: "AI-" },
+        supershot: { stroke: "#f9ff76", text: "SHOT" },
+        freeze: { stroke: "#99deff", text: "ICE" },
+      };
+      const current = map[state.powerUp.type];
+      ctx.strokeStyle = current.stroke;
+      ctx.fillStyle = "rgba(255, 240, 176, 0.12)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(state.powerUp.x, state.powerUp.y, state.powerUp.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#fff1bf";
+      ctx.font = "bold 12px Segoe UI";
+      ctx.textAlign = "center";
+      ctx.fillText(current.text, state.powerUp.x, state.powerUp.y + 4);
+    }
+
+    function drawOverlay() {
+      if (state.running && !state.paused) return;
+      ctx.fillStyle = "rgba(5, 8, 18, 0.68)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#ecf1ff";
+      ctx.textAlign = "center";
+      ctx.font = "700 42px Segoe UI";
+
+      if (!state.running) {
+        const winner = state.leftScore > state.rightScore ? "Победа игрока!" : "Победа ИИ";
+        const title = state.leftScore === 0 && state.rightScore === 0 ? "PONGG TURBO+" : winner;
+        ctx.fillText(title, canvas.width / 2, canvas.height / 2 - 24);
+      } else {
+        ctx.fillText("Пауза", canvas.width / 2, canvas.height / 2 - 24);
+      }
+      ctx.font = "500 22px Segoe UI";
+      ctx.fillStyle = "#b6c8ff";
+      ctx.fillText("Space — продолжить | R — новая игра", canvas.width / 2, canvas.height / 2 + 26);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawCenterLine();
+
+      ctx.fillStyle = "rgba(130, 199, 255, 0.14)";
+      for (let i = 0; i < ball.trail.length; i += 1) {
+        const t = ball.trail[i];
+        const alpha = i / ball.trail.length;
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, ball.r * 0.52 * alpha, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.fillStyle = "#6ee8ff";
+      ctx.fillRect(24, paddle.leftY, paddle.w, paddle.h);
+      ctx.fillStyle = state.botFreeze > 0 ? "#88dbff" : "#ff7ad6";
+      ctx.fillRect(canvas.width - 24 - paddle.w, paddle.rightY, paddle.w, paddle.h);
+
+      const g = ctx.createRadialGradient(ball.x - 3, ball.y - 3, 2, ball.x, ball.y, ball.r + 4);
+      g.addColorStop(0, "#ffffff");
+      g.addColorStop(1, ball.glow);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+      ctx.fill();
+
+      drawPowerUp();
+
+      for (const p of state.particles) {
+        ctx.globalAlpha = Math.max(0, p.life / 40);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, 3, 3);
+      }
+      ctx.globalAlpha = 1;
+
+      drawOverlay();
+    }
+
+    function loop() {
+      update();
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    function onPointerMove(event) {
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      if (x < rect.width * 0.58) {
+        const y = event.clientY - rect.top;
+        input.pointerY = (y / rect.height) * canvas.height;
+      }
+    }
+
+    difficultyButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        difficultyButtons.forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+        state.chosenDifficulty = Number(button.dataset.difficulty);
+        if (!state.running) {
+          state.difficulty = state.chosenDifficulty;
+          updateHud();
+        }
+      });
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.code === "KeyW") input.w = true;
+      if (event.code === "KeyS") input.s = true;
+      if (event.code === "ArrowUp") input.up = true;
+      if (event.code === "ArrowDown") input.down = true;
+      if (event.code === "ShiftLeft" || event.code === "ShiftRight") input.shift = true;
+
+      if (event.code === "Space") {
+        event.preventDefault();
+        if (!state.running) fullReset(); else state.paused = !state.paused;
+      }
+      if (event.code === "KeyR") fullReset();
+    });
+
+    document.addEventListener("keyup", (event) => {
+      if (event.code === "KeyW") input.w = false;
+      if (event.code === "KeyS") input.s = false;
+      if (event.code === "ArrowUp") input.up = false;
+      if (event.code === "ArrowDown") input.down = false;
+      if (event.code === "ShiftLeft" || event.code === "ShiftRight") input.shift = false;
+    });
+
+    canvas.addEventListener("pointerdown", onPointerMove);
+    canvas.addEventListener("pointermove", onPointerMove);
+    canvas.addEventListener("pointerleave", () => { input.pointerY = null; });
+
+    updateHud();
+    loop();
+  </script>
 </body>
 </html>
